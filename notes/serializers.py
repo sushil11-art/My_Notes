@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework import exceptions
+from notes.models import Notes
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -34,11 +35,10 @@ class LoginSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username', 'password']
-
     # optional for functional based views
     def validate(self,data):
-        username=data.get('username')
-        password=data.get('password')
+        username=data.get('username','')
+        password=data.get('password','')
         if username and password:
             user=authenticate(username=username,password=password)
             print(user)
@@ -53,3 +53,13 @@ class LoginSerializer(serializers.ModelSerializer):
             msg="Please provide both username and password"
             return exceptions.ValidationError(msg)
         return data
+
+
+class NoteSerializer(serializers.ModelSerializer):
+	# owner=serializers.PrimaryKeyRelatedField(many=False,)
+	class Meta:
+		model=Notes
+		fields=['id','owner','subject','course_code','file','credit']
+
+
+

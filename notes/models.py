@@ -7,7 +7,6 @@ from django.core.validators import MinValueValidator, RegexValidator
 from django.contrib.auth.models import User
 # Create your models here.
 
-
 class Profile(models.Model):
 	user=models.OneToOneField(User,on_delete=models.CASCADE)
 	fullname=models.CharField(max_length=200)
@@ -25,7 +24,7 @@ class Profile(models.Model):
 
 
 class Notes(models.Model):
-	owner=models.ForeignKey(Profile,on_delete=models.CASCADE,related_name="owner")
+	owner=models.ForeignKey(Profile,on_delete=models.CASCADE,null=True)
 	subject=models.CharField(max_length=200)
 	course_code=models.CharField(max_length=200)
 	file=models.FileField(upload_to='uploads/')
