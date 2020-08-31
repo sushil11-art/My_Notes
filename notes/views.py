@@ -117,7 +117,7 @@ class GlobalNoteSearch(generics.ListAPIView):
 		notes=Notes.objects.exclude(owner=self.request.user.profile)
 		return notes
 
-# with generic view
+# with generic view to check whether a user has a permissin for a particular action
 
 # class NoteDetailView(generics.RetrieveUpdateDestroyAPIView):
 # 	permission_classes=[permissions.IsAuthenticated]
