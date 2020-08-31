@@ -24,6 +24,15 @@ from notes.models import Notes
 
 from django.http import Http404
 
+
+#Paginator and filter
+from django.core.paginator import Paginator
+
+from rest_framework import filters
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.authentication import TokenAuthentication
+from notes.permissions import IsOwnerOrReadOnly
+
 # Create your views here.
 
 
@@ -52,8 +61,13 @@ class LoginView(generics.CreateAPIView):
 
 class NoteUploadView(APIView):
 	permission_classes=[permissions.IsAuthenticated]
-	parser_class=(FileUploadParser,)
+	authentication_classes=(TokenAuthentication,)
 
+	parser_class=(FileUploadParser,)
+	filter_backends=[filters.SearchFilter]
+	search_fields=['subject']
+
+    # filter_backends=[DjangoFilterBackend]
 	# create notes
 	def post(self,request,format=None):
 		serializer=NoteSerializer(data=request.data)
@@ -67,47 +81,85 @@ class NoteUploadView(APIView):
 
 		return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
-	# get all notes
-	def get(self,request,format=None):
-		notes=Notes.objects.filter(owner=request.user.profile)
-		serializer=NoteSerializer(notes,many=True)
-		return Response(serializer.data)
 
-
-	
-class NoteDetailView(APIView):
+class GetMyNotes(generics.ListAPIView):
 	permission_classes=[permissions.IsAuthenticated]
+	authentication_classes=(TokenAuthentication,)
+	serializer_class=NoteSerializer
+	filter_backends=[filters.SearchFilter]
+	search_fields=['subject']
+	def get_queryset(self):
+		notes=Notes.objects.filter(owner=self.request.user.profile)
+		return notes
+
+	#  get all the notes of currently login user with custom paggination
+
+	# get all notes
+	# def get(self,request,format=None):
+	# 	notes=Notes.objects.all()
+	# 	# notes=Notes.objects.filter(owner=request.user.profile)
+	# 	# include paginator 
+	# 	page_number=self.request.query_params.get('page_number',1)
+	# 	page_size=self.request.query_params.get('page_size',10)
+	# 	paginator=Paginator(notes,page_size)
+	# 	# serializer=NoteSerializer(notes,many=True)
+	# 	serializer=NoteSerializer(paginator.page(page_number),many=True)
+
+	# 	return Response(serializer.data,status=status.HTTP_200_OK)
+
+class GlobalNoteSearch(generics.ListAPIView):
+	permission_classes=[permissions.IsAuthenticated]
+	authentication_classes=(TokenAuthentication,)
+	serializer_class=NoteSerializer
+	filter_backends=[filters.SearchFilter]
+	search_fields=['subject']
+	def get_queryset(self):
+		notes=Notes.objects.exclude(owner=self.request.user.profile)
+		return notes
+
+class NoteDetailView(generics.RetrieveUpdateDestroyAPIView):
+	permission_classes=[permissions.IsAuthenticated]
+	authentication_classes=(TokenAuthentication,)
 	parser_class=(FileUploadParser,)
-	# check whether note exist or not 
-	def get_object(self,pk,format=None):
-		try:
-			return Notes.objects.filter(pk=pk).first()
+	serializer_class=NoteSerializer
+	def get_queryset(self):
+		return Notes.objects.filter(owner=self.request.user.profile)
 
-		except Notes.DoesNotExist:
-			raise Http404
-	# get one single note
-	def get(self,request,pk,format=None):
-		print(pk)
-		note=self.get_object(pk)
-		serializer=NoteSerializer(note)
-		return Response(serializer.data)
-	# update one particular note
-	def put(self,request,pk,format=None):
-		note=self.get_object(pk)
-		serializer=NoteSerializer(note,data=request.data)
-		if serializer.is_valid():
-			serializer.save(owner=request.user.profile)
-			return Response(serializer.data)
+		
+# can develop own flow fro object level permissions
 
-		return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+# class NoteDetailView(generics.RetrieveUpdateDestroyAPIView):
+# 	permission_classes=[permissions.IsAuthenticated,IsOwnerOrReadOnly]
+# 	authentication_classes=(TokenAuthentication,)
+# 	parser_class=(FileUploadParser,)
+# 	# check whether note exist or not 
+# 	def get_object(self,pk,format=None):
+# 		try:
+# 			return Notes.objects.get(pk=pk)
+# 		except Notes.DoesNotExist:
+# 			raise Http404
+# 	# get one single note
+# 	def get(self,request,pk,format=None):
+# 		print(pk)
+# 		note=self.get_object(pk)
+# 		serializer=NoteSerializer(note)
+# 		return Response(serializer.data)
+# 	# update one particular note
+# 	def put(self,request,pk,format=None):
+# 		note=self.get_object(pk)
+# 		serializer=NoteSerializer(note,data=request.data)
+# 		if serializer.is_valid():
+# 			serializer.save(owner=request.user.profile)
+# 			return Response(serializer.data)
 
-	# delete one particular
-	def delete(self,request,pk,format=None):
-		note=self.get_object(pk)
-		note.delete()
-		return Response(status=status.HTTP_200_OK)
+# 		return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
-	
+# 	# delete one particular
+# 	def delete(self,request,pk,format=None):
+# 		note=self.get_object(pk)
+# 		note.delete()
+# 		return Response({"message":"successfully deleted"},status=status.HTTP_200_OK)
+
 
 class ApiRoot(APIView):
 
@@ -120,6 +172,8 @@ class ApiRoot(APIView):
 
             'login':reverse('login',request=request,format=format),
             'upload':reverse('upload',request=request,format=format),
+            'list':reverse('list',request=request,format=format),
+            'mynotes':reverse('mynotes',request=request,format=format),
 
 
         })
