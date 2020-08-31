@@ -117,48 +117,52 @@ class GlobalNoteSearch(generics.ListAPIView):
 		notes=Notes.objects.exclude(owner=self.request.user.profile)
 		return notes
 
-class NoteDetailView(generics.RetrieveUpdateDestroyAPIView):
-	permission_classes=[permissions.IsAuthenticated]
-	authentication_classes=(TokenAuthentication,)
-	parser_class=(FileUploadParser,)
-	serializer_class=NoteSerializer
-	def get_queryset(self):
-		return Notes.objects.filter(owner=self.request.user.profile)
-
-		
-# can develop own flow fro object level permissions
+# with generic view
 
 # class NoteDetailView(generics.RetrieveUpdateDestroyAPIView):
-# 	permission_classes=[permissions.IsAuthenticated,IsOwnerOrReadOnly]
+# 	permission_classes=[permissions.IsAuthenticated]
 # 	authentication_classes=(TokenAuthentication,)
 # 	parser_class=(FileUploadParser,)
-# 	# check whether note exist or not 
-# 	def get_object(self,pk,format=None):
-# 		try:
-# 			return Notes.objects.get(pk=pk)
-# 		except Notes.DoesNotExist:
-# 			raise Http404
-# 	# get one single note
-# 	def get(self,request,pk,format=None):
-# 		print(pk)
-# 		note=self.get_object(pk)
-# 		serializer=NoteSerializer(note)
-# 		return Response(serializer.data)
-# 	# update one particular note
-# 	def put(self,request,pk,format=None):
-# 		note=self.get_object(pk)
-# 		serializer=NoteSerializer(note,data=request.data)
-# 		if serializer.is_valid():
-# 			serializer.save(owner=request.user.profile)
-# 			return Response(serializer.data)
+# 	serializer_class=NoteSerializer
+# 	def get_queryset(self):
+# 		return Notes.objects.filter(owner=self.request.user.profile)
 
-# 		return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
-# 	# delete one particular
-# 	def delete(self,request,pk,format=None):
-# 		note=self.get_object(pk)
-# 		note.delete()
-# 		return Response({"message":"successfully deleted"},status=status.HTTP_200_OK)
+# my own flow to check whether a user has permission or note while i am writing custom view
+
+class NoteDetailView(generics.RetrieveUpdateDestroyAPIView):
+	permission_classes=[permissions.IsAuthenticated,IsOwnerOrReadOnly]
+	authentication_classes=(TokenAuthentication,)
+	parser_class=(FileUploadParser,)
+	# check whether note exist or not 
+	def get_object(self,pk,format=None):
+		try:
+			return Notes.objects.get(pk=pk)
+		except Notes.DoesNotExist:
+			raise Http404
+	# get one single note
+	def get(self,request,pk,format=None):
+		print(pk)
+		note=self.get_object(pk)
+		serializer=NoteSerializer(note)
+		return Response(serializer.data)
+	# update one particular note
+	def put(self,request,pk,format=None):
+		note=self.get_object(pk)
+		self.check_object_permissions(request,note)
+		serializer=NoteSerializer(note,data=request.data)
+		if serializer.is_valid():
+			serializer.save(owner=request.user.profile)
+			return Response(serializer.data)
+
+		return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+	# delete one particular
+	def delete(self,request,pk,format=None):
+		note=self.get_object(pk)
+		self.check_object_permissions(request,note)
+		note.delete()
+		return Response({"message":"successfully deleted"},status=status.HTTP_200_OK)
 
 
 class ApiRoot(APIView):
