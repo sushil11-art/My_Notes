@@ -1,5 +1,5 @@
 from django.urls import path
-from notes.views import RegisterView,ApiRoot,LoginView,NoteUploadView,NoteDetailView,GlobalNoteSearch,GetMyNotes
+from notes.views import RegisterView,ApiRoot,LoginView,NoteUploadView,NoteDetailView,GlobalNoteSearch,GetMyNotes,ProfileView
 from rest_framework.urlpatterns import format_suffix_patterns
 
 
@@ -15,6 +15,8 @@ urlpatterns = [
 
 	#search all the notes with subject name uploaded by user except the current login in users
 	path('list/',GlobalNoteSearch.as_view(),name="list"),
+	path('profile/',ProfileView.as_view(),name="profile"),
+
 	# path('^upload/(?P<subject>.+)/$', SearchNoteList.as_view(),name="search-note"),
 	# path('login/',login,name="login"),
 

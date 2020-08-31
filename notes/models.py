@@ -9,8 +9,8 @@ from django.contrib.auth.models import User
 
 class Profile(models.Model):
 	user=models.OneToOneField(User,on_delete=models.CASCADE)
-	fullname=models.CharField(max_length=200)
-	department=models.CharField(max_length=200)
+	fullname=models.CharField(max_length=200,null=True)
+	department=models.CharField(max_length=200,null=True)
 	semester=models.IntegerField(null=True)
 	rollno=models.IntegerField(null=True)
 	phoneno=models.CharField(validators=[RegexValidator("^0?[5-9]{1}\d{9}$")], max_length=15, null=True, blank=True)

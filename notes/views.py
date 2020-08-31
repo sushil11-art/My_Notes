@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from notes.serializers import UserSerializer,LoginSerializer,NoteSerializer
+from notes.serializers import UserSerializer,LoginSerializer,NoteSerializer,ProfileSerializer
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework import status
@@ -20,7 +20,7 @@ from rest_framework import viewsets
 from rest_framework.parsers import FileUploadParser,MultiPartParser
 from rest_framework import permissions
 
-from notes.models import Notes
+from notes.models import Notes,Profile
 
 from django.http import Http404
 
@@ -58,6 +58,26 @@ class LoginView(generics.CreateAPIView):
         # user=validatedData['user']
         token,_=Token.objects.get_or_create(user=user)
         return Response({'token':token.key},status=status.HTTP_200_OK)
+
+class ProfileView(APIView):
+	permission_classes=[permissions.IsAuthenticated]
+	authentication_classes=(TokenAuthentication,)
+	parser_class=(FileUploadParser,)
+	def get(self,request,format=None):
+		profile=Profile.objects.filter(user=request.user).first()
+		serializer=ProfileSerializer(profile)
+		return Response(serializer.data,status=status.HTTP_200_OK)
+
+	def put(self,request,format=None):
+		profile=Profile.objects.filter(user=request.user).first()
+		serializer=ProfileSerializer(profile,data=request.data)
+		if serializer.is_valid():
+			serializer.save(user=request.user)
+			return Response(serializer.data,status=status.HTTP_201_CREATED)
+
+		return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+
 
 class NoteUploadView(APIView):
 	permission_classes=[permissions.IsAuthenticated]
@@ -116,6 +136,7 @@ class GlobalNoteSearch(generics.ListAPIView):
 	def get_queryset(self):
 		notes=Notes.objects.exclude(owner=self.request.user.profile)
 		return notes
+
 
 # with generic view to check whether a user has a permissin for a particular action
 
@@ -178,6 +199,8 @@ class ApiRoot(APIView):
             'upload':reverse('upload',request=request,format=format),
             'list':reverse('list',request=request,format=format),
             'mynotes':reverse('mynotes',request=request,format=format),
+            'profile':reverse('profile',request=request,format=format),
+
 
 
         })

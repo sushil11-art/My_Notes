@@ -2,7 +2,18 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from rest_framework import exceptions
-from notes.models import Notes
+from notes.models import Notes,Profile
+
+class UserSerializer1(serializers.ModelSerializer):
+    class Meta:
+        model=User
+        fields=["username"]
+
+class ProfileSerializer(serializers.ModelSerializer):
+    user=UserSerializer1(many=False,read_only=True)
+    class Meta:
+        model=Profile
+        fields=["id","user","fullname","department","semester","rollno","phoneno","gender","registrationno","profile_pic"]
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -60,6 +71,8 @@ class NoteSerializer(serializers.ModelSerializer):
 	class Meta:
 		model=Notes
 		fields=['id','owner','subject','course_code','file','credit']
+
+
 
 
 
